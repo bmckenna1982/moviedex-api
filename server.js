@@ -6,8 +6,8 @@ const helmet = require('helmet')
 const MOVIEDEX = require('./moviedex.json')
 
 const app = express()
-
-app.use(morgan('common'))
+const morganSetting = process.env.NODE_ENV === 'production' ? 'tiny' : 'common'
+app.use(morgan(morganSetting))
 app.use(helmet())
 app.use(cors())
 
@@ -20,6 +20,17 @@ app.use(function validateBearerToken(req, res, next) {
   }
   next()
 })
+
+app.use((error, req, res, next) => {
+  let response
+  if (process.env.NODE_ENV === 'production') {
+    response = { error: { message: 'server error' }}
+  } else {
+    response = { error }
+  }
+  res.status(500).json(response)
+})
+
 
 app.get('/movie', (req, res) => {
   const { genre, country, avg_vote } = req.query
@@ -43,7 +54,7 @@ app.get('/movie', (req, res) => {
   res.json(response)
 })
 
-const PORT = 8000
+const PORT = process.env.PORT || 8000
 
 app.listen(PORT, () => {
   console.log('Server started on PORT 8000')
